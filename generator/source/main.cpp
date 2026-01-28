@@ -131,11 +131,22 @@ int main() {
             outputFile << "static std::array<std::uint8_t, " << bytes.size() + 1 << "> " << "resource_" LIBROMFS_PROJECT_NAME "_" << identifierCount << " = {\n";
             outputFile << "    ";
 
-            for (auto byte : bytes) {
-                outputFile << static_cast<std::uint32_t>(byte) << ",";
-            }
+            #if defined(LIBROMFS_USE_EMBED) && defined(__has_embed)
+                #ifdef LIBROMFS_COMPRESS_RESOURCES
+                {
+                    path = fs::path(COMPRESSED_OUTPUT_DIR) / std::to_string(identifierCount);
+                    std::ofstream compressedFile(path);
+                    compressedFile.write(std::bit_cast<const char*>(bytes.data()), bytes.size());
+                }
+                #endif
+                outputFile << "#embed " << path;
+            #else
+                for (auto byte : bytes) {
+                    outputFile << static_cast<std::uint32_t>(byte) << ",";
+                }
+            #endif
 
-            outputFile << " };\n\n";
+            outputFile << "\n};\n\n";
 
             paths.push_back(relativePath);
 
